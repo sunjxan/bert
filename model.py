@@ -44,8 +44,8 @@ class EncoderLayer(nn.Module):
         self.feed_forward = feed_forward
         self.sublayer = _get_clones(SublayerConnection(d_model, dropout), 2)
 
-    def forward(self, x, mask=None):
-        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask))
+    def forward(self, x, src_mask=None):
+        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, src_mask))
         return self.sublayer[1](x, self.feed_forward)
 
 class Encoder(nn.Module):
@@ -69,9 +69,9 @@ class DecoderLayer(nn.Module):
         self.feed_forward = feed_forward
         self.sublayer = _get_clones(SublayerConnection(d_model, dropout), 3)
 
-    def forward(self, x, mem, src_mask=None, tgt_mask=None):
+    def forward(self, x, memory, tgt_mask=None, memory_mask=None):
         x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, tgt_mask))
-        x = self.sublayer[1](x, lambda x: self.src_attn(x, mem, mem, src_mask))
+        x = self.sublayer[1](x, lambda x: self.src_attn(x, memory, memory, memory_mask))
         return self.sublayer[2](x, self.feed_forward)
 
 class Decoder(nn.Module):
@@ -80,9 +80,26 @@ class Decoder(nn.Module):
         self.layers = _get_clones(decoder_layer, num_layers)
         self.norm = norm
 
-    def forward(self, x, mem, src_mask=None, tgt_mask=None):
+    def forward(self, x, memory, tgt_mask=None, memory_mask=None):
         for layer in self.layers:
-            x = layer(x, mem, src_mask, tgt_mask)
+            x = layer(x, memory, tgt_mask, memory_mask)
         if self.norm is not None:
             x = self.norm(x)
         return x
+
+class Transformer(nn.Module):
+    def __init__(self, encoder, decoder):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+        self._reset_parameters()
+    
+    def forward(self, src, tgt, src_mask=None, tgt_mask=None, memory_mask=None):
+        memory = self.encoder(src, src_mask)
+        output = self.decoder(tgt, memory, tgt_mask, memory_mask)
+        return output
+
+    def _reset_parameters(self):
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
