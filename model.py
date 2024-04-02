@@ -46,8 +46,8 @@ class EncoderLayer(nn.Module):
         self.feed_forward = feed_forward
         self.sublayer = _get_clones(SublayerConnection(d_model, dropout), 2)
 
-    def forward(self, x, src_mask=None):
-        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, src_mask))
+    def forward(self, x, mask):
+        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask))
         return self.sublayer[1](x, self.feed_forward)
 
 class Encoder(nn.Module):
@@ -56,7 +56,7 @@ class Encoder(nn.Module):
         self.layers = _get_clones(encoder_layer, num_layers)
         self.norm = norm
     
-    def forward(self, x, mask=None):
+    def forward(self, x, mask):
         for layer in self.layers:
             x = layer(x, mask)
         if self.norm is not None:
@@ -71,9 +71,9 @@ class DecoderLayer(nn.Module):
         self.feed_forward = feed_forward
         self.sublayer = _get_clones(SublayerConnection(d_model, dropout), 3)
 
-    def forward(self, x, memory, tgt_mask=None, memory_mask=None):
+    def forward(self, x, memory, src_mask, tgt_mask):
         x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, tgt_mask))
-        x = self.sublayer[1](x, lambda x: self.src_attn(x, memory, memory, memory_mask))
+        x = self.sublayer[1](x, lambda x: self.src_attn(x, memory, memory, src_mask))
         return self.sublayer[2](x, self.feed_forward)
 
 class Decoder(nn.Module):
@@ -82,9 +82,9 @@ class Decoder(nn.Module):
         self.layers = _get_clones(decoder_layer, num_layers)
         self.norm = norm
 
-    def forward(self, x, memory, tgt_mask=None, memory_mask=None):
+    def forward(self, x, memory, src_mask, tgt_mask):
         for layer in self.layers:
-            x = layer(x, memory, tgt_mask, memory_mask)
+            x = layer(x, memory, src_mask, tgt_mask)
         if self.norm is not None:
             x = self.norm(x)
         return x
@@ -162,10 +162,11 @@ def attention(query, key, value, mask=None, dropout=None):
         p_attn = dropout(p_attn)
     return torch.matmul(p_attn, value), p_attn
 
-class MultiHeadedAttention(nn.Module):
+class MultiHeadAttention(nn.Module):
     def __init__(self, d_model, num_heads, dropout=.1):
         super().__init__()
         assert d_model % num_heads == 0
+        self.d_model = d_model
         self.d_k = d_model // num_heads
         self.num_heads = num_heads
         self.linears = _get_clones(nn.Linear(d_model, d_model), 4)
@@ -184,23 +185,24 @@ class MultiHeadedAttention(nn.Module):
 
         x, self.attn = attention(query, key, value, mask=mask, dropout=self.dropout)
 
-        x = x.transpose(1, 2).contiguous().view(nbatches, -1, self.num_heads * self.d_k)
+        x = x.transpose(1, 2).contiguous().view(nbatches, -1, self.d_model)
 
         return self.linears[-1](x)
 
 class PositionwiseFeedForward(nn.Module):
-    def __init__(self, d_model, d_ff, dropout=.1):
+    def __init__(self, d_model, d_ff, activation=F.relu, dropout=.1):
         super().__init__()
-        self.w_1 = nn.Linear(d_model, d_ff)
-        self.w_2 = nn.Linear(d_ff, d_model)
+        self.lin1 = nn.Linear(d_model, d_ff)
+        self.lin2 = nn.Linear(d_ff, d_model)
+        self.activation = activation
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        return self.w_2(self.dropout(self.w_1(x).relu()))
+        return self.lin2(self.dropout(self.activation(self.lin1(x))))
 
 def build_transformer(src_vocab, tgt_vocab, d_model=512, nhead=8, num_layers=6, d_ff=2048, dropout=.1):
     c = copy.deepcopy
-    attn = MultiHeadedAttention(d_model, nhead)
+    attn = MultiHeadAttention(d_model, nhead)
     ff = PositionwiseFeedForward(d_model, d_ff, dropout)
     position = PositionalEncoding(d_model, dropout)
     src_emb = Embeddings(d_model, src_vocab)
