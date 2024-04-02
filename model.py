@@ -124,16 +124,28 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 class EncoderDecoder(nn.Module):
-    def __init__(self, encoder, decoder):
+    def __init__(self, encoder, decoder, src_embed, tgt_embed, generator):
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
+        self.src_embed = src_embed
+        self.tgt_embed = tgt_embed
+        self.generator = generator
         self._reset_parameters()
+
+    def encode(self, src, src_mask):
+        src = self.src_embed(src)
+        return self.encoder(src, src_mask)
+
+    def decode(self, memory, src_mask, tgt, tgt_mask):
+        tgt = self.tgt_embed(tgt)
+        return self.decoder(tgt, memory, src_mask, tgt_mask)
     
-    def forward(self, src, tgt, src_mask=None, tgt_mask=None, memory_mask=None):
-        memory = self.encoder(src, src_mask)
-        output = self.decoder(tgt, memory, tgt_mask, memory_mask)
-        return output
+    def forward(self, src, tgt, src_mask, tgt_mask):
+        memory = self.encode(src, src_mask)
+        output = self.decode(tgt, memory, src_mask, tgt, tgt_mask)
+        prob = self.generator(output[:, -1])
+        return prob
 
     def _reset_parameters(self):
         for p in self.parameters():
@@ -186,12 +198,19 @@ class PositionwiseFeedForward(nn.Module):
     def forward(self, x):
         return self.w_2(self.dropout(self.w_1(x).relu()))
 
-def build_transformer(d_model=512, d_ff=2048, h=8, N=6, dropout=.1):
+def build_transformer(src_vocab, tgt_vocab, d_model=512, nhead=8, num_layers=6, d_ff=2048, dropout=.1):
     c = copy.deepcopy
-    attn = MultiHeadedAttention(d_model, h)
+    attn = MultiHeadedAttention(d_model, nhead)
     ff = PositionwiseFeedForward(d_model, d_ff, dropout)
+    position = PositionalEncoding(d_model, dropout)
+    src_emb = Embeddings(d_model, src_vocab)
+    tgt_emb = Embeddings(d_model, tgt_vocab)
+    generator = Generator(d_model, tgt_vocab)
     model = EncoderDecoder(
-        Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), N),
-        Decoder(DecoderLayer(d_model, c(attn), c(attn), c(ff), dropout), N)
+        Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), num_layers),
+        Decoder(DecoderLayer(d_model, c(attn), c(attn), c(ff), dropout), num_layers),
+        nn.Sequential(src_emb, c(position)),
+        nn.Sequential(tgt_emb, c(position)),
+        generator
     )
     return model
