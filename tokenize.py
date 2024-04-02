@@ -3,8 +3,10 @@ import sentencepiece as spm
 import config
 
 def train(input_file, model_prefix, vocab_size, model_type, character_coverage):
-    arg = f'--input={input_file} --model_prefix={model_prefix} --vocab_size={vocab_size} --model_type={model_type}\
---character_coverage={character_coverage} --pad_id=0 --unk_id=1 --bos_id=2 --eos_id=3'
+    arg = f'--input={input_file} --model_prefix={model_prefix} --vocab_size={vocab_size} \
+--model_type={model_type} --character_coverage={character_coverage} \
+--pad_id={config.padding_id} --unk_id={config.unknown_id} \
+--bos_id={config.bos_id} --eos_id={config.eos_id}'
     spm.SentencePieceTrainer.Train(arg)
 
 if __name__ == '__main__':
