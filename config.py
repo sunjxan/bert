@@ -5,7 +5,7 @@ tgt_input_file = './data/corpus_chn.txt'
 tgt_vocab_size = 32000
 tgt_model_prefix = 'chn'
 
-padding_idx = 0
-unknown_idx = 1
-bos_idx = 2
-eos_idx = 3
+padding_id = 0
+unknown_id = 1
+bos_id = 2
+eos_id = 3
