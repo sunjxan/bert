@@ -1,6 +1,8 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 import config
+
+DEVICE = config.device
 
 def load_tokenizers():
     src_model_path = config.src_model_prefix + '.model'
@@ -31,4 +33,15 @@ class MyDataset(Dataset):
             tgt_sent = self._tgt_sents[index]
             return src_sent, tgt_sent
         return
-        
+
+class Batch:
+    def __init__(self):
+        pass
+
+def collate_batch(batch):
+    tokenizer_src, tokenizer_tgt = load_tokenizers()
+
+def create_dataloader(src_input_file, tgt_input_file, batch_size, shuffle=False, drop_last=False):
+    dataset = MyDataset(src_input_file, tgt_input_file)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, collate_fn=collate_batch)
+    return dataloader
