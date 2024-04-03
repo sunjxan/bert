@@ -64,20 +64,20 @@ def collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding=128):
     for (_src, _tgt) in batch:
         processed_src = torch.cat(
             [
-                tokenizer_src.bos_id(),
+                torch.tensor([tokenizer_src.bos_id()], device=DEVICE),
                 torch.tensor(
                     tokenizer_src.EncodeAsIds(_src)[:max_padding], dtype=torch.int64, device=DEVICE
                 ),
-                tokenizer_src.eos_id()
+                torch.tensor([tokenizer_src.eos_id()], device=DEVICE)
             ], dim=0
         )
         processed_tgt = torch.cat(
             [
-                tokenizer_tgt.bos_id(),
+                torch.tensor([tokenizer_tgt.bos_id()], device=DEVICE)
                 torch.tensor(
                     tokenizer_tgt.EncodeAsIds(_tgt)[:max_padding], dtype=torch.int64, device=DEVICE
                 ),
-                tokenizer_tgt.eos_id()
+                torch.tensor([tokenizer_tgt.eos_id()], device=DEVICE)
             ], dim=0
         )
         src_list.append(processed_src)
@@ -93,6 +93,6 @@ def create_dataloader(src_input_file, tgt_input_file, batch_size, shuffle=False,
     tokenizer_src, tokenizer_tgt = load_tokenizers()
 
     def collate_fn(batch):
-        return collate_batch(batch, tokenizer_src, tokenizer_tgt, device, max_padding)
+        return collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, collate_fn=collate_fn)
     return dataloader
