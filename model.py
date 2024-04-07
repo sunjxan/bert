@@ -10,6 +10,8 @@ def _get_clones(module, N):
 class LayerNorm(nn.Module):
     def __init__(self, shape, eps=1e-5):
         super().__init__()
+        if isinstance(shape, int):
+            shape = (shape,)
         self.shape = tuple(shape)
         self.eps = eps
         self.weight = nn.Parameter(torch.empty(self.shape))
@@ -143,7 +145,7 @@ class EncoderDecoder(nn.Module):
     
     def forward(self, src, tgt, src_mask, tgt_mask):
         memory = self.encode(src, src_mask)
-        output = self.decode(tgt, memory, src_mask, tgt, tgt_mask)
+        output = self.decode(memory, src_mask, tgt, tgt_mask)
         prob = self.generator(output[:, -1])
         return prob
 
@@ -190,7 +192,7 @@ class MultiHeadAttention(nn.Module):
         return self.linears[-1](x)
 
 class PositionwiseFeedForward(nn.Module):
-    def __init__(self, d_model, d_ff, activation=F.relu, dropout=.1):
+    def __init__(self, d_model, d_ff, dropout=.1, activation=F.relu):
         super().__init__()
         self.lin1 = nn.Linear(d_model, d_ff)
         self.lin2 = nn.Linear(d_ff, d_model)
