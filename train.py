@@ -13,10 +13,9 @@ def run_epoch(data_iter, model, loss_compute, optimizer, scheduler, mode="train"
     total_loss = 0
     tokens = 0
     n_accum = 0
+
     for i, batch in enumerate(data_iter):
-        out = model.forward(
-            batch.src, batch.tgt, batch.src_mask, batch.tgt_mask
-        )
+        out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
         loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
         # loss_node = loss_node / accum_iter
         if mode == "train" or mode == "train+log":
@@ -37,13 +36,8 @@ def run_epoch(data_iter, model, loss_compute, optimizer, scheduler, mode="train"
         if i % 40 == 1 and (mode == "train" or mode == "train+log"):
             lr = optimizer.param_groups[0]["lr"]
             elapsed = time.time() - start
-            print(
-                (
-                    "Epoch Step: %6d | Accumulation Step: %3d | Loss: %6.2f "
-                    + "| Tokens / Sec: %7.1f | Learning Rate: %6.1e"
-                )
-                % (i, n_accum, loss / batch.ntokens, tokens / elapsed, lr)
-            )
+            print("Epoch Step: %6d | Accumulation Step: %3d | Loss: %6.2f | Tokens / Sec: %7.1f | Learning Rate: %6.1e"
+                % (i, n_accum, loss / batch.ntokens, tokens / elapsed, lr))
             start = time.time()
             tokens = 0
         del loss
