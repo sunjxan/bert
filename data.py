@@ -45,6 +45,10 @@ def subsequent_mask(size):
 
 class Batch:
     def __init__(self, src, tgt=None, src_pad=0, tgt_pad=0):
+        # src (N,S)
+        # src_mask (N,1,S)
+        # tgt, tgt_y (N,T-1)
+        # tgt_mask (N,T-1,T-1)
         self.src = src
         self.src_mask = (src != src_pad).unsqueeze(-2)
         if tgt is not None:
@@ -60,6 +64,7 @@ class Batch:
         return tgt_mask
 
 def collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding=128):
+    # 在每个句子前后加上BOS和EOS，再进行填充截断处理，得到(N,S)的src和(N,T)的tgt，创建Batch对象
     src_list, tgt_list = [], []
     for (_src, _tgt) in batch:
         processed_src = torch.cat(
