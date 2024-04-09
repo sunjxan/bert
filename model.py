@@ -181,6 +181,7 @@ class MultiHeadAttention(nn.Module):
             mask = mask.unsqueeze(1)
         nbatches = query.size(0)
 
+        # (N,L,D) => (N,h,L,d_k)
         query, key, value = [
             lin(x).view(nbatches, -1, self.num_heads, self.d_k).transpose(1, 2)
             for lin, x in zip(self.linears, (query, key, value))
@@ -188,11 +189,13 @@ class MultiHeadAttention(nn.Module):
 
         x, self.attn = attention(query, key, value, mask=mask, dropout=self.dropout)
 
+        # (N,h,L,d_k) => (N,L,D)
         x = x.transpose(1, 2).contiguous().view(nbatches, -1, self.d_model)
 
         return self.linears[-1](x)
 
 class PositionwiseFeedForward(nn.Module):
+    # 不改变输入的shape
     def __init__(self, d_model, d_ff, dropout=.1, activation=F.relu):
         super().__init__()
         self.lin1 = nn.Linear(d_model, d_ff)
@@ -208,7 +211,9 @@ def build_transformer(src_vocab, tgt_vocab, d_model=512, nhead=8, num_layers=6, 
     attn = MultiHeadAttention(d_model, nhead)
     ff = PositionwiseFeedForward(d_model, d_ff, dropout)
     position = PositionalEncoding(d_model, dropout)
+    # (N,S,D)
     src_emb = Embeddings(d_model, src_vocab)
+    # (N,T-1,D)
     tgt_emb = Embeddings(d_model, tgt_vocab)
     generator = Generator(d_model, tgt_vocab)
     model = EncoderDecoder(
