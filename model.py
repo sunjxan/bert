@@ -28,6 +28,7 @@ class LayerNorm(nn.Module):
         nn.init.zeros_(self.bias)
 
 class SublayerConnection(nn.Module):
+    # norm和dropout都不改变shape
     def __init__(self, d_model, dropout=.1, norm_first=True):
         super().__init__()
         self.norm = LayerNorm(d_model)
@@ -146,7 +147,7 @@ class EncoderDecoder(nn.Module):
     def forward(self, src, tgt, src_mask, tgt_mask):
         memory = self.encode(src, src_mask)
         output = self.decode(memory, src_mask, tgt, tgt_mask)
-        prob = self.generator(output[:, -1])
+        prob = self.generator(output)
         return prob
 
     def _reset_parameters(self):
