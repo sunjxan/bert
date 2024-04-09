@@ -157,12 +157,15 @@ class EncoderDecoder(nn.Module):
 
 def attention(query, key, value, mask=None, dropout=None):
     d_k = query.size(-1)
+    # 计算query对key的相似度分数
     scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
     if mask is not None:
         scores = scores.masked_fill(mask == 0, -1e9)
+    # 将相似度分数转化为权重
     p_attn = scores.softmax(dim=-1)
     if dropout is not None:
         p_attn = dropout(p_attn)
+    # 使用权重对应value乘积累加，得到新的编码
     return torch.matmul(p_attn, value), p_attn
 
 class MultiHeadAttention(nn.Module):
