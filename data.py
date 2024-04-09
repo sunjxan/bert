@@ -78,7 +78,7 @@ def collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding=128):
         )
         processed_tgt = torch.cat(
             [
-                torch.tensor([tokenizer_tgt.bos_id()], device=DEVICE)
+                torch.tensor([tokenizer_tgt.bos_id()], device=DEVICE),
                 torch.tensor(
                     tokenizer_tgt.EncodeAsIds(_tgt)[:max_padding], dtype=torch.int64, device=DEVICE
                 ),
