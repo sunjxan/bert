@@ -157,11 +157,14 @@ class EncoderDecoder(nn.Module):
 
 def attention(query, key, value, mask=None, dropout=None):
     d_k = query.size(-1)
-    # 计算query对key的相似度分数
+    # 计算query对key的注意力分数
     scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
     if mask is not None:
+        # src attention，mask形状(1,S)，广播后(S,S)，左侧为True，右侧为False，用于重新编码时忽略pad，但pad也会重新编码
+        # tgt attention，mask形状(T-1,T-1)，右侧或45度右上为False，用于重新编码时忽略pad和该词后面的词，但pad也会重新编码
+        # tgt-src attention，mask形状(1,S)，广播后(T-1,S)，左侧为True，右侧为False，每个词根据src的value重新编码，可用于预测下一个词
         scores = scores.masked_fill(mask == 0, -1e9)
-    # 将相似度分数转化为权重
+    # 将注意力分数转化为权重
     p_attn = scores.softmax(dim=-1)
     if dropout is not None:
         p_attn = dropout(p_attn)
