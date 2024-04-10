@@ -1,7 +1,7 @@
 import torch
 
 src_train_file = './data/train/corpus.en'
-src_eval_file = './data/eval/corpus.en'
+src_val_file = './data/val/corpus.en'
 src_test_file = './data/test/corpus.en'
 src_vocab_size = 32000
 src_model_prefix = 'en'
@@ -9,7 +9,7 @@ src_model_type = 'bpe'
 src_character_coverage = 1
 
 tgt_train_file = './data/train/corpus.zh'
-tgt_eval_file = './data/eval/corpus.zh'
+tgt_val_file = './data/val/corpus.zh'
 tgt_test_file = './data/test/corpus.zh'
 tgt_vocab_size = 32000
 tgt_model_prefix = 'zh'
