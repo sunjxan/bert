@@ -38,9 +38,11 @@ def test():
     
     for i, testcase in enumerate(test_dataloader):
         print(f"Case {i} Test ====", flush=True)
-        res = greedy_decode(model, testcase.src, testcase.src_mask, max_len=20, \
+        print('Src:', testcase.src_texts[0])
+        print('Target:', testcase.tgt_texts[0])
+        res = greedy_decode(model, testcase.src, testcase.src_mask, max_len=50, \
             start_symbol=tokenizer_tgt.bos_id(), end_symbol=tokenizer_tgt.eos_id())
-        print(tokenizer_tgt.DecodeIds(res[0]))
+        print('Output:', tokenizer_tgt.DecodeIds(res[0]))
 
 if __name__ == '__main__':
     test()
