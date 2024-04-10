@@ -110,3 +110,6 @@ def train():
 
     file_path = "%sfinal.pt" % config.file_prefix
     torch.save(module.state_dict(), file_path)
+
+if __name__ == '__main__':
+    train()
