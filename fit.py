@@ -64,11 +64,13 @@ def train():
         config.d_model, config.n_heads, config.n_layers, config.d_ff, config.dropout)
 
     criterion = LabelSmoothing(size=config.tgt_vocab_size, \
-        padding_idx=tokenizer_tgt.pad_id(), smoothing=0.1)
+        padding_idx=tokenizer_tgt.pad_id(), smoothing=.1)
     loss_compute = SimpleLossCompute(model.generator, criterion)
 
-    dataloader = create_dataloader(config.src_input_file, config.tgt_input_file, \
-        config.batch_size, True, True, config.max_padding)
+    train_dataloader = create_dataloader(config.src_train_file, config.tgt_train_file, \
+        config.batch_size, config.max_padding, shuffle=True, drop_last=True)
+    val_dataloader = create_dataloader(config.src_val_file, config.tgt_val_file, \
+        config.batch_size, config.max_padding, shuffle=False, drop_last=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.base_lr, betas=(.9, .98), eps=1e-9)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -80,7 +82,7 @@ def train():
     for epoch in range(config.num_epochs):
         model.train()
         print(f"Epoch {epoch} Training ====", flush=True)
-        _, train_state = run_epoch(dataloader, model, loss_compute, optimizer, \
+        _, train_state = run_epoch(train_dataloader, model, loss_compute, optimizer, \
             lr_scheduler, mode="train+log", accum_iter=config.accum_iter, train_state=train_state)
 
         if is_main_process:
@@ -89,14 +91,8 @@ def train():
 
         print(f"Epoch {epoch} Validation ====", flush=True)
         model.eval()
-        sloss = run_epoch(
-            valid_dataloader,
-            model,
-            loss_compute,
-            DummyOptimizer(),
-            DummyScheduler(),
-            mode="eval"
-        )
+        sloss = run_epoch(val_dataloader, model, loss_compute, \
+            DummyOptimizer(), DummyScheduler(), mode="eval")
         print(sloss)
 
     if is_main_process:
