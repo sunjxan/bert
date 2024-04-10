@@ -93,7 +93,7 @@ def collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding=128):
     tgt = pad_sequence(tgt_list, batch_first=True, padding_value=tgt_pad)
     return Batch(src, tgt, src_pad, tgt_pad)
 
-def create_dataloader(src_input_file, tgt_input_file, batch_size, shuffle=False, drop_last=False, max_padding=128):
+def create_dataloader(src_input_file, tgt_input_file, batch_size, max_padding=128, shuffle=False, drop_last=False):
     dataset = MyDataset(src_input_file, tgt_input_file)
     tokenizer_src, tokenizer_tgt = load_tokenizers()
 
