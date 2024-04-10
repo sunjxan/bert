@@ -13,6 +13,20 @@ class TrainState:
     samples = 0
     tokens = 0
 
+class DummyOptimizer(torch.optim.Optimizer):
+    def __init__(self):
+        self.param_groups = [{"lr": 0}]
+
+    def step(self):
+        pass
+
+    def zero_grad(self, set_to_none=False):
+        pass
+
+class DummyScheduler:
+    def step(self):
+        pass
+
 def rate(step, model_size, factor, warmup):
     if step == 0:
         step = 1
@@ -85,9 +99,8 @@ def train():
         _, train_state = run_epoch(train_dataloader, model, loss_compute, optimizer, \
             lr_scheduler, mode="train+log", accum_iter=config.accum_iter, train_state=train_state)
 
-        if is_main_process:
-            file_path = "%s%.2d.pt" % (config["file_prefix"], epoch)
-            torch.save(module.state_dict(), file_path)
+        file_path = "%s%.2d.pt" % (config.file_prefix, epoch)
+        torch.save(module.state_dict(), file_path)
 
         print(f"Epoch {epoch} Validation ====", flush=True)
         model.eval()
@@ -95,6 +108,5 @@ def train():
             DummyOptimizer(), DummyScheduler(), mode="eval")
         print(sloss)
 
-    if is_main_process:
-        file_path = "%sfinal.pt" % config["file_prefix"]
-        torch.save(module.state_dict(), file_path)
+    file_path = "%sfinal.pt" % config.file_prefix
+    torch.save(module.state_dict(), file_path)
