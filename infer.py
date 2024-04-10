@@ -1,3 +1,11 @@
+import os
+import torch
+
+import config
+
+from data import load_tokenizers, create_dataloader
+from model import build_transformer
+
 def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol=None):
     memory = model.encode(src, src_mask)
     ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src.data)
@@ -14,3 +22,24 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol=None):
         if next_word == end_symbol:
             return ys
     return ys
+
+def test():
+    tokenizer_src, tokenizer_tgt = load_tokenizers()
+    model = build_transformer(config.src_vocab_size, config.tgt_vocab_size, \
+        config.d_model, config.n_heads, config.n_layers, config.d_ff, config.dropout)
+    
+    file_path = "%sfinal.pt" % config.file_prefix
+    if os.path.exists(file_path):
+        model.load_state_dict(torch.load(file_path))
+    model.eval()
+
+    test_dataloader = create_dataloader(config.src_test_file, config.tgt_test_file, \
+        config.batch_size, config.max_padding, shuffle=False, drop_last=False)
+    
+    for i, batch in enumerate(test_dataloader):
+        res = greedy_decode(model, batch.src, batch.src_mask, max_len=500, \
+            start_symbol=tokenizer_tgt.bos_id(), end_symbol=tokenizer_tgt.eos_id())
+        print(res)
+
+if __name__ == '__main__':
+    test()
