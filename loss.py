@@ -24,16 +24,11 @@ class LabelSmoothing(nn.Module):
         return self.criterion(x, true_dist.clone().detach())
 
 class SimpleLossCompute:
-    def __init__(self, generator, criterion):
-        self.generator = generator
+    def __init__(self, criterion):
         self.criterion = criterion
 
     def __call__(self, x, y, norm):
-        x = self.generator(x)
-        sloss = (
-            self.criterion(
-                x.contiguous().view(-1, x.size(-1)), y.contiguous().view(-1)
-            )
-            / norm
-        )
+        sloss = self.criterion(
+            x.contiguous().view(-1, x.size(-1)), y.contiguous().view(-1)
+        ) / norm
         return sloss.data * norm, sloss
