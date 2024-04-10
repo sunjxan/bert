@@ -42,7 +42,7 @@ def test():
         print('Target:', testcase.tgt_texts[0])
         res = greedy_decode(model, testcase.src, testcase.src_mask, max_len=50, \
             start_symbol=tokenizer_tgt.bos_id(), end_symbol=tokenizer_tgt.eos_id())
-        print('Output:', tokenizer_tgt.DecodeIds(res[0]))
+        print('Output:', tokenizer_tgt.DecodeIds(res[0].tolist()))
 
 if __name__ == '__main__':
     test()
