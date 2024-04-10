@@ -79,7 +79,7 @@ def train():
 
     criterion = LabelSmoothing(size=config.tgt_vocab_size, \
         padding_idx=tokenizer_tgt.pad_id(), smoothing=.1)
-    loss_compute = SimpleLossCompute(model.generator, criterion)
+    loss_compute = SimpleLossCompute(criterion)
 
     train_dataloader = create_dataloader(config.src_train_file, config.tgt_train_file, \
         config.batch_size, config.max_padding, shuffle=True, drop_last=True)
