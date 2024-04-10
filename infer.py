@@ -3,7 +3,7 @@ import torch
 
 import config
 
-from data import load_tokenizers, create_dataloader
+from data import load_tokenizers, create_dataloader, subsequent_mask
 from model import build_transformer
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol=None):
@@ -34,10 +34,10 @@ def test():
     model.eval()
 
     test_dataloader = create_dataloader(config.src_test_file, config.tgt_test_file, \
-        config.batch_size, config.max_padding, shuffle=False, drop_last=False)
+        1, config.max_padding, shuffle=False, drop_last=False)
     
-    for i, batch in enumerate(test_dataloader):
-        res = greedy_decode(model, batch.src, batch.src_mask, max_len=500, \
+    for i, testcase in enumerate(test_dataloader):
+        res = greedy_decode(model, testcase.src, testcase.src_mask, max_len=20, \
             start_symbol=tokenizer_tgt.bos_id(), end_symbol=tokenizer_tgt.eos_id())
         print(res)
 
