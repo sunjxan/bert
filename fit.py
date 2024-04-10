@@ -13,7 +13,13 @@ class TrainState:
     samples = 0
     tokens = 0
 
-def run_epoch(data_iter, model, loss_compute, optimizer, scheduler, mode="train", accum_iter=1, train_state=TrainState()):
+def rate(step, model_size, factor, warmup):
+    if step == 0:
+        step = 1
+    return factor * model_size ** (-.5) * min(step ** (-.5), step * warmup ** (-1.5))
+
+def run_epoch(data_iter, model, loss_compute, optimizer, scheduler, 、
+    mode="train", accum_iter=1, print_iter=40, train_state=TrainState()):
 
     start = time.time()
     total_tokens = 0
@@ -24,7 +30,7 @@ def run_epoch(data_iter, model, loss_compute, optimizer, scheduler, mode="train"
     for i, batch in enumerate(data_iter):
         out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
         loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
-        # loss_node = loss_node / accum_iter
+
         if mode == "train" or mode == "train+log":
             loss_node.backward()
             train_state.step += 1
@@ -40,7 +46,7 @@ def run_epoch(data_iter, model, loss_compute, optimizer, scheduler, mode="train"
         total_loss += loss
         total_tokens += batch.ntokens
         tokens += batch.ntokens
-        if i % 40 == 1 and (mode == "train" or mode == "train+log"):
+        if i % print_iter == 1 and (mode == "train" or mode == "train+log"):
             lr = optimizer.param_groups[0]["lr"]
             elapsed = time.time() - start
             print("Epoch Step: %6d | Accumulation Step: %3d | Loss: %6.2f | Tokens / Sec: %7.1f | Learning Rate: %6.1e"
