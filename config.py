@@ -29,5 +29,7 @@ base_lr = 1.0
 warmup = 3000
 num_epochs = 8
 accum_iter = 10
+print_iter = 40
+file_prefix = 'model_'
 
 device = torch.device('cpu')
