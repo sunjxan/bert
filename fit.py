@@ -32,7 +32,7 @@ def rate(step, model_size, factor, warmup):
         step = 1
     return factor * model_size ** (-.5) * min(step ** (-.5), step * warmup ** (-1.5))
 
-def run_epoch(data_iter, model, loss_compute, optimizer, scheduler, 、
+def run_epoch(data_iter, model, loss_compute, optimizer, scheduler,
     mode="train", accum_iter=1, print_iter=40, train_state=TrainState()):
 
     start = time.time()
