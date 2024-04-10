@@ -23,18 +23,18 @@ class MyDataset(Dataset):
     def __init__(self, src_input_file, tgt_input_file):
         super().__init__()
         with open(src_input_file, 'r', encoding='UTF8') as f:
-            self._src_sents = list(map(lambda x: x.strip(), f))
+            self._src_texts = list(map(lambda x: x.strip(), f))
         with open(tgt_input_file, 'r', encoding='UTF8') as f:
-            self._tgt_sents = list(map(lambda x: x.strip(), f))
-        self._size = min(len(self._src_sents), len(self._tgt_sents))
+            self._tgt_texts = list(map(lambda x: x.strip(), f))
+        self._size = min(len(self._src_texts), len(self._tgt_texts))
 
     def __len__(self):
         return self._size
 
     def __getitem__(self, index):
         if index >= 0 and index < self.__len__():
-            src_sent = self._src_sents[index]
-            tgt_sent = self._tgt_sents[index]
+            src_sent = self._src_texts[index]
+            tgt_sent = self._tgt_texts[index]
             return src_sent, tgt_sent
         return
 
@@ -44,11 +44,13 @@ def subsequent_mask(size):
     return subsequent_mask == 0
 
 class Batch:
-    def __init__(self, src, tgt=None, src_pad=0, tgt_pad=0):
+    def __init__(self, src, tgt=None, src_pad=0, tgt_pad=0, src_texts=None, tgt_texts=None):
         # src (N,S)
         # src_mask (N,1,S)
         # tgt, tgt_y (N,T-1)
         # tgt_mask (N,T-1,T-1)
+        self.src_texts = src_texts
+        self.tgt_texts = tgt_texts
         self.src = src
         self.src_mask = (src != src_pad).unsqueeze(-2)
         if tgt is not None:
@@ -65,6 +67,7 @@ class Batch:
 
 def collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding=128):
     # 在每个句子前后加上BOS和EOS，再进行填充截断处理，得到(N,S)的src和(N,T)的tgt，创建Batch对象
+    src_texts, tgt_texts = [], []
     src_list, tgt_list = [], []
     for (_src, _tgt) in batch:
         processed_src = torch.cat(
@@ -87,11 +90,13 @@ def collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding=128):
         )
         src_list.append(processed_src)
         tgt_list.append(processed_tgt)
+        src_texts.append(_src)
+        tgt_texts.append(_tgt)
     src_pad = tokenizer_src.pad_id()
     tgt_pad = tokenizer_tgt.pad_id()
     src = pad_sequence(src_list, batch_first=True, padding_value=src_pad)
     tgt = pad_sequence(tgt_list, batch_first=True, padding_value=tgt_pad)
-    return Batch(src, tgt, src_pad, tgt_pad)
+    return Batch(src, tgt, src_pad, tgt_pad, src_texts, tgt_texts)
 
 def create_dataloader(src_input_file, tgt_input_file, batch_size, max_padding=128, shuffle=False, drop_last=False):
     dataset = MyDataset(src_input_file, tgt_input_file)
