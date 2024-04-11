@@ -32,7 +32,7 @@ def rate(step, model_size, factor, warmup):
         step = 1
     return factor * model_size ** (-.5) * min(step ** (-.5), step * warmup ** (-1.5))
 
-def run_epoch(data_iter, model, loss_compute, optimizer, scheduler,
+def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
     mode="train", accum_iter=1, print_iter=40, train_state=TrainState()):
 
     start = time.time()
@@ -63,8 +63,8 @@ def run_epoch(data_iter, model, loss_compute, optimizer, scheduler,
         if i % print_iter == 1 and (mode == "train" or mode == "train+log"):
             lr = optimizer.param_groups[0]["lr"]
             elapsed = time.time() - start
-            print("Epoch Step: %6d | Accumulation Step: %3d | Loss: %6.2f | Tokens / Sec: %7.1f | Learning Rate: %6.1e"
-                % (i, n_accum, loss / batch.ntokens, tokens / elapsed, lr))
+            print("Epoch Step: %6d/%6d | Accumulation Step: %3d | Loss: %6.2f | Tokens / Sec: %7.1f | Learning Rate: %6.1e"
+                % (i, iter_size, n_accum, loss / batch.ntokens, tokens / elapsed, lr))
             start = time.time()
             tokens = 0
         del loss
@@ -81,9 +81,9 @@ def train():
         padding_idx=tokenizer_tgt.pad_id(), smoothing=.1)
     loss_compute = SimpleLossCompute(criterion)
 
-    train_dataloader = create_dataloader(config.src_train_file, config.tgt_train_file, \
+    train_dataloader, train_size = create_dataloader(config.src_train_file, config.tgt_train_file, \
         config.batch_size, config.max_padding, shuffle=True, drop_last=True)
-    val_dataloader = create_dataloader(config.src_val_file, config.tgt_val_file, \
+    val_dataloader, val_size = create_dataloader(config.src_val_file, config.tgt_val_file, \
         config.batch_size, config.max_padding, shuffle=False, drop_last=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.base_lr, betas=(.9, .98), eps=1e-9)
@@ -95,16 +95,16 @@ def train():
 
     for epoch in range(config.num_epochs):
         model.train()
-        print(f"Epoch {epoch} Training ====", flush=True)
-        _, train_state = run_epoch(train_dataloader, model, loss_compute, optimizer, \
+        print(f"Epoch {epoch+1} Training ====", flush=True)
+        _, train_state = run_epoch(train_dataloader, train_size, model, loss_compute, optimizer, \
             lr_scheduler, mode="train+log", accum_iter=config.accum_iter, train_state=train_state)
 
         file_path = "%s%.2d.pt" % (config.file_prefix, epoch)
         torch.save(model.state_dict(), file_path)
 
-        print(f"Epoch {epoch} Validation ====", flush=True)
+        print(f"Epoch {epoch+1} Validation ====", flush=True)
         model.eval()
-        sloss = run_epoch(val_dataloader, model, loss_compute, \
+        sloss = run_epoch(val_dataloader, val_size, model, loss_compute, \
             DummyOptimizer(), DummyScheduler(), mode="eval")
         print(sloss)
 
