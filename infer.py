@@ -36,7 +36,7 @@ def test():
     test_dataloader, test_size = create_dataloader(config.src_test_file, config.tgt_test_file, \
         1, config.max_padding, shuffle=False, drop_last=False)
 
-    print("Test ====")
+    print("Testing ====")
     for i, testcase in enumerate(test_dataloader):
         print(f"Case {i+1} / {test_size}", flush=True)
         print('Src:', testcase.src_texts[0])
