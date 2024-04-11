@@ -33,11 +33,12 @@ def test():
         model.load_state_dict(torch.load(file_path))
     model.eval()
 
-    test_dataloader = create_dataloader(config.src_test_file, config.tgt_test_file, \
+    test_dataloader, test_count = create_dataloader(config.src_test_file, config.tgt_test_file, \
         1, config.max_padding, shuffle=False, drop_last=False)
-    
+
+    print("Test ====")
     for i, testcase in enumerate(test_dataloader):
-        print(f"Case {i} Test ====", flush=True)
+        print(f"Case {i+1} / {test_count}", flush=True)
         print('Src:', testcase.src_texts[0])
         print('Target:', testcase.tgt_texts[0])
         res = greedy_decode(model, testcase.src, testcase.src_mask, max_len=50, \
