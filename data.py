@@ -1,3 +1,4 @@
+import math
 import torch
 import sentencepiece as spm
 
@@ -105,4 +106,8 @@ def create_dataloader(src_input_file, tgt_input_file, batch_size, max_padding=12
     def collate_fn(batch):
         return collate_batch(batch, tokenizer_src, tokenizer_tgt, max_padding)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, collate_fn=collate_fn)
-    return dataloader
+    if drop_last:
+        size = math.floor(len(dataset) / batch_size)
+    else:
+        size = math.ceil(len(dataset) / batch_size)
+    return dataloader, size
