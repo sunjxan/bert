@@ -60,15 +60,14 @@ def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
         total_loss += loss
         total_tokens += batch.ntokens
         tokens += batch.ntokens
-        if i % print_iter == 0 and mode == "train":
+        if (i % print_iter == 0 or i + 1 == iter_size) and mode == "train":
             lr = optimizer.param_groups[0]["lr"]
             elapsed = time.time() - start
             print("Epoch Step: %6d/%6d | Accumulation Step: %3d | Loss: %6.2f | Tokens / Sec: %7.1f | Learning Rate: %6.1e"
                 % (i+1, iter_size, n_accum, loss / batch.ntokens, tokens / elapsed, lr))
             start = time.time()
             tokens = 0
-        del loss
-        del loss_node
+
     return total_loss / total_tokens, train_state
 
 def train():
@@ -106,7 +105,7 @@ def train():
         model.eval()
         sloss = run_epoch(val_dataloader, val_size, model, loss_compute, \
             DummyOptimizer(), DummyScheduler(), mode="eval")
-        print(sloss)
+        print('Loss: %6.2f' % sloss)
 
     file_path = "%sfinal.pt" % config.file_prefix
     torch.save(model.state_dict(), file_path)
