@@ -100,7 +100,7 @@ def train():
             lr_scheduler, mode="train+log", accum_iter=config.accum_iter, train_state=train_state)
 
         file_path = "%s%.2d.pt" % (config.file_prefix, epoch)
-        torch.save(module.state_dict(), file_path)
+        torch.save(model.state_dict(), file_path)
 
         print(f"Epoch {epoch} Validation ====", flush=True)
         model.eval()
@@ -109,7 +109,7 @@ def train():
         print(sloss)
 
     file_path = "%sfinal.pt" % config.file_prefix
-    torch.save(module.state_dict(), file_path)
+    torch.save(model.state_dict(), file_path)
 
 if __name__ == '__main__':
     train()
