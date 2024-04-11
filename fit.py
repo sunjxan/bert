@@ -45,7 +45,7 @@ def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
         out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
         loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
 
-        if mode == "train" or mode == "train+log":
+        if mode == "train":
             loss_node.backward()
             train_state.step += 1
             train_state.samples += batch.src.shape[0]
@@ -60,11 +60,11 @@ def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
         total_loss += loss
         total_tokens += batch.ntokens
         tokens += batch.ntokens
-        if i % print_iter == 1 and (mode == "train" or mode == "train+log"):
+        if i % print_iter == 0 and mode == "train":
             lr = optimizer.param_groups[0]["lr"]
             elapsed = time.time() - start
             print("Epoch Step: %6d/%6d | Accumulation Step: %3d | Loss: %6.2f | Tokens / Sec: %7.1f | Learning Rate: %6.1e"
-                % (i, iter_size, n_accum, loss / batch.ntokens, tokens / elapsed, lr))
+                % (i+1, iter_size, n_accum, loss / batch.ntokens, tokens / elapsed, lr))
             start = time.time()
             tokens = 0
         del loss
@@ -97,7 +97,7 @@ def train():
         model.train()
         print(f"Epoch {epoch+1} Training ====", flush=True)
         _, train_state = run_epoch(train_dataloader, train_size, model, loss_compute, optimizer, \
-            lr_scheduler, mode="train+log", accum_iter=config.accum_iter, train_state=train_state)
+            lr_scheduler, mode="train", accum_iter=config.accum_iter, train_state=train_state)
 
         file_path = "%s%.2d.pt" % (config.file_prefix, epoch)
         torch.save(model.state_dict(), file_path)
