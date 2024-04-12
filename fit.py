@@ -103,7 +103,7 @@ def train():
 
         print(f"Epoch {epoch+1} Validation ====", flush=True)
         model.eval()
-        sloss = run_epoch(val_dataloader, val_size, model, loss_compute, \
+        sloss, _ = run_epoch(val_dataloader, val_size, model, loss_compute, \
             DummyOptimizer(), DummyScheduler(), mode="eval")
         print('Loss: %6.2f' % sloss)
 
