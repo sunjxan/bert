@@ -66,48 +66,14 @@ class Encoder(nn.Module):
             x = self.norm(x)
         return x
 
-class DecoderLayer(nn.Module):
-    def __init__(self, d_model, self_attn, src_attn, feed_forward, dropout=.1):
-        super().__init__()
-        self.self_attn = self_attn
-        self.src_attn = src_attn
-        self.feed_forward = feed_forward
-        self.sublayer = _get_clones(SublayerConnection(d_model, dropout), 3)
-
-    def forward(self, x, memory, src_mask, tgt_mask):
-        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, tgt_mask))
-        x = self.sublayer[1](x, lambda x: self.src_attn(x, memory, memory, src_mask))
-        return self.sublayer[2](x, self.feed_forward)
-
-class Decoder(nn.Module):
-    def __init__(self, decoder_layer, num_layers, norm=None):
-        super().__init__()
-        self.layers = _get_clones(decoder_layer, num_layers)
-        self.norm = norm
-
-    def forward(self, x, memory, src_mask, tgt_mask):
-        for layer in self.layers:
-            x = layer(x, memory, src_mask, tgt_mask)
-        if self.norm is not None:
-            x = self.norm(x)
-        return x
-
-class Generator(nn.Module):
-    def __init__(self, d_model, vocab):
-        super().__init__()
-        self.proj = nn.Linear(d_model, vocab)
-
-    def forward(self, x):
-        return F.log_softmax(self.proj(x), dim=-1)
-
 class Embeddings(nn.Module):
     def __init__(self, d_model, vocab):
         super().__init__()
         self.emb = nn.Embedding(vocab, d_model)
-        self.d_model = d_model
+        self.segment = nn.Embedding(3, d_model, padding_idx=0)
 
-    def forward(self, x):
-        return self.emb(x) * math.sqrt(self.d_model)
+    def forward(self, x, segment_label):
+        return self.emb(x) + self.segment(segment_label)
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout, max_len=5000):
