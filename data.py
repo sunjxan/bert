@@ -66,13 +66,13 @@ def collate_batch(batch, tokenizer, dataset, max_padding=256):
     for (first, index) in batch:
         if index == size - 1:
             second, _ = random.choice(dataset)
-            is_next = 0
+            is_next = False
         elif random.random() > .5:
             second, _ = dataset[index + 1]
-            is_next = 1
+            is_next = True
         else:
             second, ix = random.choice(dataset)
-            is_next = 1 if ix == index + 1 else 0
+            is_next = (ix == index + 1)
         first_tokens, first_labels = mask_word(first, tokenizer, config.vocab_size, pad_id)
         second_tokens, second_labels = mask_word(second, tokenizer, config.vocab_size, pad_id)
         first_segment = [1] * (len(first_tokens) + 2)
@@ -100,7 +100,7 @@ def collate_batch(batch, tokenizer, dataset, max_padding=256):
             [
                 torch.tensor(first_segment, dtype=torch.int64, device=DEVICE),
                 torch.tensor(second_segment, dtype=torch.int64, device=DEVICE)
-            ]
+            ], dim=0
         )[:max_padding]
 
         token_list.append(processed_tokens)
