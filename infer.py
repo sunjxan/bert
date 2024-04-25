@@ -39,8 +39,8 @@ def test():
     print("Testing ====")
     for i, testcase in enumerate(test_dataloader):
         print(f"Case {i+1} / {test_size}", flush=True)
-        print('Src:', testcase.src_texts[0])
-        print('Target:', testcase.tgt_texts[0])
+        print('Src:', testcase.src_sents[0])
+        print('Target:', testcase.tgt_sents[0])
         res = greedy_decode(model, testcase.src, testcase.src_mask, max_len=50, \
             start_symbol=tokenizer_tgt.bos_id(), end_symbol=tokenizer_tgt.eos_id())
         print('Output:', tokenizer_tgt.DecodeIds(res[0].tolist()))

@@ -1,22 +1,14 @@
 import torch
 
-src_train_file = './data/train/corpus.en'
-src_val_file = './data/val/corpus.en'
-src_test_file = './data/test/corpus.en'
-src_vocab_size = 32000
-src_model_prefix = 'en'
-src_model_type = 'bpe'
-src_character_coverage = 1
+train_file = './data/train/corpus.zh'
+val_file = './data/val/corpus.zh'
+test_file = './data/test/corpus.zh'
+vocab_size = 32000
+model_prefix = 'zh'
+model_type = 'bpe'
+character_coverage = .9995
 
-tgt_train_file = './data/train/corpus.zh'
-tgt_val_file = './data/val/corpus.zh'
-tgt_test_file = './data/test/corpus.zh'
-tgt_vocab_size = 32000
-tgt_model_prefix = 'zh'
-tgt_model_type = 'bpe'
-tgt_character_coverage = .9995
-
-max_padding = 128
+max_padding = 256
 batch_size = 32
 
 d_model = 512

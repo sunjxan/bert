@@ -10,5 +10,4 @@ def train(input_file, model_prefix, vocab_size, model_type, character_coverage):
     spm.SentencePieceTrainer.Train(arg)
 
 if __name__ == '__main__':
-    train(config.src_input_file, config.src_model_prefix, config.src_vocab_size, config.src_model_type, config.src_character_coverage)
-    train(config.tgt_input_file, config.tgt_model_prefix, config.tgt_vocab_size, config.tgt_model_type, config.tgt_character_coverage)
+    train(config.train_file, config.model_prefix, config.vocab_size, config.model_type, config.character_coverage)
