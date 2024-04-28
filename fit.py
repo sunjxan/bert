@@ -4,7 +4,7 @@ import torch
 import config
 
 from data import load_tokenizers, create_dataloader
-from model import build_transformer
+from model import build_model
 from loss import LabelSmoothing, SimpleLossCompute
 
 class TrainState:
@@ -73,7 +73,7 @@ def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
 def train():
 
     tokenizer_src, tokenizer_tgt = load_tokenizers()
-    model = build_transformer(config.src_vocab_size, config.tgt_vocab_size, \
+    model = build_model(config.src_vocab_size, config.tgt_vocab_size, \
         config.d_model, config.n_heads, config.n_layers, config.d_ff, config.dropout)
 
     criterion = LabelSmoothing(size=config.tgt_vocab_size, \

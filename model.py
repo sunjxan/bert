@@ -178,7 +178,25 @@ class PositionwiseFeedForward(nn.Module):
     def forward(self, x):
         return self.lin2(self.dropout(self.activation(self.lin1(x))))
 
-def build_transformer(src_vocab, tgt_vocab, d_model=512, nhead=8, num_layers=6, d_ff=2048, dropout=.1):
+class MaskedLanguageModel(nn.Module):
+    def __init__(self, hidden, vocab_size):
+        super().__init__()
+        self.linear = nn.Linear(hidden, vocab_size)
+        self.softmax = nn.LogSoftmax(dim=-1)
+
+    def forward(self, x):
+        return self.softmax(self.linear(x))
+
+class NextSentencePrediction(nn.Module):
+    def __init__(self, hidden):
+        super().__init__()
+        self.linear = nn.Linear(hidden, 2)
+        self.softmax = nn.LogSoftmax(dim=-1)
+
+    def forward(self, x):
+        return self.softmax(self.linear(x[:, 0]))
+
+def build_model(src_vocab, tgt_vocab, d_model=512, nhead=8, num_layers=6, d_ff=2048, dropout=.1):
     c = copy.deepcopy
     attn = MultiHeadAttention(d_model, nhead)
     ff = PositionwiseFeedForward(d_model, d_ff, dropout)

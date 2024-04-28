@@ -4,7 +4,7 @@ import torch
 import config
 
 from data import load_tokenizers, create_dataloader, subsequent_mask
-from model import build_transformer
+from model import build_model
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol=None):
     memory = model.encode(src, src_mask)
@@ -25,7 +25,7 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol=None):
 
 def test():
     tokenizer_src, tokenizer_tgt = load_tokenizers()
-    model = build_transformer(config.src_vocab_size, config.tgt_vocab_size, \
+    model = build_model(config.src_vocab_size, config.tgt_vocab_size, \
         config.d_model, config.n_heads, config.n_layers, config.d_ff, config.dropout)
     
     file_path = "%sfinal.pt" % config.file_prefix
