@@ -92,35 +92,6 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[:, :x.size(1)].requires_grad_(False)
         return self.dropout(x)
 
-class EncoderDecoder(nn.Module):
-    def __init__(self, encoder, decoder, src_embed, tgt_embed, generator):
-        super().__init__()
-        self.encoder = encoder
-        self.decoder = decoder
-        self.src_embed = src_embed
-        self.tgt_embed = tgt_embed
-        self.generator = generator
-        self._reset_parameters()
-
-    def encode(self, src, src_mask):
-        src = self.src_embed(src)
-        return self.encoder(src, src_mask)
-
-    def decode(self, memory, src_mask, tgt, tgt_mask):
-        tgt = self.tgt_embed(tgt)
-        return self.decoder(tgt, memory, src_mask, tgt_mask)
-    
-    def forward(self, src, tgt, src_mask, tgt_mask):
-        memory = self.encode(src, src_mask)
-        output = self.decode(memory, src_mask, tgt, tgt_mask)
-        prob = self.generator(output)
-        return prob
-
-    def _reset_parameters(self):
-        for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
-
 def attention(query, key, value, mask=None, dropout=None):
     d_k = query.size(-1)
     # 计算query对key的注意力分数
@@ -196,21 +167,39 @@ class NextSentencePrediction(nn.Module):
     def forward(self, x):
         return self.softmax(self.linear(x[:, 0]))
 
-def build_model(src_vocab, tgt_vocab, d_model=512, nhead=8, num_layers=6, d_ff=2048, dropout=.1):
+class BERT(nn.Module):
+    def __init__(self, encoder, embed, position, mask_lm, next_sent):
+        super().__init__()
+        self.encoder = encoder
+        self.embed = embed
+        self.position = position
+        self.mask_lm = mask_lm
+        self.next_sent = next_sent
+        self._reset_parameters()
+
+    def encode(self, tokens, segment, mask):
+        tokens = self.embed(tokens, segment)
+        tokens = self.position(tokens)
+        return self.encoder(tokens, mask)
+    
+    def forward(self, tokens, segment, mask):
+        memory = self.encode(tokens, segment, mask)
+        return self.mask_lm(memory), self.next_sent(memory)
+
+    def _reset_parameters(self):
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
+def build_model(vocab_size, d_model=512, nhead=8, num_layers=6, d_ff=2048, dropout=.1):
     c = copy.deepcopy
     attn = MultiHeadAttention(d_model, nhead)
     ff = PositionwiseFeedForward(d_model, d_ff, dropout)
-    position = PositionalEncoding(d_model, dropout)
-    # (N,S,D)
-    src_emb = Embeddings(d_model, src_vocab)
-    # (N,T-1,D)
-    tgt_emb = Embeddings(d_model, tgt_vocab)
-    generator = Generator(d_model, tgt_vocab)
-    model = EncoderDecoder(
+    model = BERT(
         Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), num_layers),
-        Decoder(DecoderLayer(d_model, c(attn), c(attn), c(ff), dropout), num_layers),
-        nn.Sequential(src_emb, c(position)),
-        nn.Sequential(tgt_emb, c(position)),
-        generator
+        PositionalEncoding(d_model, dropout),
+        Embeddings(d_model, vocab_size),
+        MaskedLanguageModel(d_model, vocab_size),
+        NextSentencePrediction(d_model)
     )
     return model
