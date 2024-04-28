@@ -39,7 +39,7 @@ class Batch:
         self.labels = labels
         self.segments = segments
         self.is_next = is_next
-        self.mask = (self.tokens != pad_id)
+        self.mask = (self.tokens != pad_id).unsqueeze(-2)
 
 def mask_word(sent, tokenizer, vocab_size, pad=0):
     tokens = tokenizer.EncodeAsIds(sent)

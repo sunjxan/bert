@@ -197,8 +197,8 @@ def build_model(vocab_size, d_model=512, nhead=8, num_layers=6, d_ff=2048, dropo
     ff = PositionwiseFeedForward(d_model, d_ff, dropout)
     model = BERT(
         Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), num_layers),
-        PositionalEncoding(d_model, dropout),
         Embeddings(d_model, vocab_size),
+        PositionalEncoding(d_model, dropout),
         MaskedLanguageModel(d_model, vocab_size),
         NextSentencePrediction(d_model)
     )
