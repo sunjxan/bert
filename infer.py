@@ -32,8 +32,7 @@ def test():
             if label:
                 if j > pos:
                     masked += tokenizer.DecodeIds(tokens[pos:j].tolist())
-                else:
-                    masked += '<mask>'
+                masked += '<mask>'
                 pos = j + 1
         if tokens.size(0) > pos:
             masked += tokenizer.DecodeIds(tokens[pos:].tolist())
