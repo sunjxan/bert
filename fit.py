@@ -13,7 +13,6 @@ class TrainState:
     step = 0
     accum_step = 0
     samples = 0
-    tokens = 0
 
 class DummyOptimizer(torch.optim.Optimizer):
     def __init__(self):
@@ -38,14 +37,12 @@ def run_epoch(data_iter, iter_size, model, criterion, optimizer, scheduler,
     mode="train", accum_iter=1, print_iter=40, train_state=TrainState()):
 
     start = time.time()
-    total_tokens = 0
     total_loss = 0
-    tokens = 0
     n_accum = 0
 
     for i, batch in enumerate(data_iter):
         mask_lm_out, next_sent_out = model.forward(batch.tokens, batch.segments, batch.mask)
-        mask_lm_loss = criterion(mask_lm_out, batch.labels)
+        mask_lm_loss = criterion(mask_lm_out.transpose(1, 2), batch.labels)
         next_sent_loss = criterion(next_sent_out, batch.is_next)
         loss = mask_lm_loss + next_sent_loss
 
@@ -53,7 +50,6 @@ def run_epoch(data_iter, iter_size, model, criterion, optimizer, scheduler,
             loss.backward()
             train_state.step += 1
             train_state.samples += batch.src.shape[0]
-            train_state.tokens += batch.ntokens
             if i % accum_iter == 0:
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
@@ -62,21 +58,15 @@ def run_epoch(data_iter, iter_size, model, criterion, optimizer, scheduler,
             scheduler.step()
 
         total_loss += loss
-        total_tokens += batch.ntokens
-        tokens += batch.ntokens
         if (i % print_iter == 0 or i + 1 == iter_size) and mode == "train":
             lr = optimizer.param_groups[0]["lr"]
-            elapsed = time.time() - start
-            print("Epoch Step: %6d/%6d | Accumulation Step: %3d | Loss: %6.2f | Tokens / Sec: %7.1f | Learning Rate: %6.1e"
-                % (i+1, iter_size, n_accum, loss / batch.ntokens, tokens / elapsed, lr))
-            start = time.time()
-            tokens = 0
+            print("Epoch Step: %6d/%6d | Accumulation Step: %3d | Loss: %6.2f | Learning Rate: %6.1e"
+                % (i+1, iter_size, n_accum, loss, lr))
 
-    return total_loss / total_tokens, train_state
+    return total_loss, train_state
 
 def train():
 
-    tokenizer = load_tokenizer()
     model = build_model(config.vocab_size, config.d_model, \
         config.n_heads, config.n_layers, config.d_ff, config.dropout).to(DEVICE)
 

@@ -106,7 +106,7 @@ def collate_batch(batch, tokenizer, dataset, max_padding=256):
         token_list.append(processed_tokens)
         label_list.append(processed_labels)
         segment_list.append(segment_labels)
-        is_next_list.append([is_next])
+        is_next_list.append(is_next)
     
     tokens = pad_sequence(token_list, batch_first=True, padding_value=pad_id)
     labels = pad_sequence(label_list, batch_first=True, padding_value=pad_id)
