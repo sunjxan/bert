@@ -22,15 +22,26 @@ def test():
     print("Testing ====")
     for i, testcase in enumerate(test_dataloader):
         print(f"Case {i+1} / {test_size}", flush=True)
+        print('Origin:', testcase.sents[0])
+        print('Is Next:', bool(testcase.is_next[0]))
         tokens = testcase.tokens[0]
         labels = testcase.labels[0]
+        texts = []
+        pos = 0
         for j, label in enumerate(labels):
             if label:
-                tokens[j] = label
-        print('Origin:', testcase.sents[0])
-        print('Is Next:', testcase.is_next)
-        print('Masked:', tokenizer.DecodeIds(tokens.tolist()))
-        print('Output:', tokenizer.DecodeIds(tokens.tolist()))
+                if j > pos:
+                    texts.append(tokens[pos:j])
+                pos = j + 1
+        if tokens.size(0) > pos:
+            texts.append(tokens[pos:])
+        masked = ''
+        for j, text in enumerate(texts):
+            if j:
+                masked += '<mask>'
+            masked += tokenizer.DecodeIds(text.tolist())
+        print('Masked:', masked)
+        # print('Output:', tokenizer.DecodeIds(tokens.tolist()))
 
 if __name__ == '__main__':
     test()
