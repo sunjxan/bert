@@ -34,14 +34,15 @@ class MyDataset(Dataset):
         return
 
 class Batch:
-    def __init__(self, tokens, labels, segments, is_next, pad_id=0):
+    def __init__(self, tokens, labels, segments, is_next, pad_id=0, sents=None):
+        self.sents = sents
         self.tokens = tokens
         self.labels = labels
         self.segments = segments
         self.is_next = is_next
         self.mask = (self.tokens != pad_id).unsqueeze(-2)
 
-def mask_word(sent, tokenizer, vocab_size, pad=0):
+def mask_word(sent, tokenizer, vocab_size):
     tokens = tokenizer.EncodeAsIds(sent)
     labels = []
 
@@ -50,16 +51,17 @@ def mask_word(sent, tokenizer, vocab_size, pad=0):
         if prob < .15:
             prob /= .15
             if prob < .8:
-                tokens[i] = pad
+                # 最后一个token作为隐码
+                tokens[i] = config.vocab_size - 1
             elif prob <.9:
-                tokens[i] = random.choice(range(vocab_size))
+                tokens[i] = random.randrange(vocab_size)
             labels.append(token)
         else:
             labels.append(0)
     return tokens, labels
 
 def collate_batch(batch, tokenizer, dataset, max_padding=256):
-    token_list, label_list, segment_list, is_next_list = [], [], [], []
+    sents, token_list, label_list, segment_list, is_next_list = [], [], [], [], []
 
     size = len(dataset)
     pad_id = tokenizer.pad_id()
@@ -73,8 +75,8 @@ def collate_batch(batch, tokenizer, dataset, max_padding=256):
         else:
             second, ix = random.choice(dataset)
             is_next = (ix == index + 1)
-        first_tokens, first_labels = mask_word(first, tokenizer, config.vocab_size, pad_id)
-        second_tokens, second_labels = mask_word(second, tokenizer, config.vocab_size, pad_id)
+        first_tokens, first_labels = mask_word(first, tokenizer, config.vocab_size)
+        second_tokens, second_labels = mask_word(second, tokenizer, config.vocab_size)
         first_segment = [1] * (len(first_tokens) + 2)
         second_segment = [2] * (len(second_tokens) + 1)
 
@@ -103,6 +105,7 @@ def collate_batch(batch, tokenizer, dataset, max_padding=256):
             ], dim=0
         )[:max_padding]
 
+        sents.append(first + second)
         token_list.append(processed_tokens)
         label_list.append(processed_labels)
         segment_list.append(segment_labels)
@@ -112,7 +115,7 @@ def collate_batch(batch, tokenizer, dataset, max_padding=256):
     labels = pad_sequence(label_list, batch_first=True, padding_value=pad_id)
     segments = pad_sequence(segment_list, batch_first=True, padding_value=pad_id)
     is_next = torch.tensor(is_next_list, dtype=torch.int64, device=DEVICE)
-    return Batch(tokens, labels, segments, is_next, pad_id)
+    return Batch(tokens, labels, segments, is_next, pad_id, sents)
 
 def create_dataloader(input_file, batch_size, max_padding=256, shuffle=False, drop_last=False):
     dataset = MyDataset(input_file)

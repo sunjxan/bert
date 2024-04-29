@@ -36,7 +36,6 @@ def rate(step, model_size, factor, warmup):
 def run_epoch(data_iter, iter_size, model, criterion, optimizer, scheduler,
     mode="train", accum_iter=1, print_iter=40, train_state=TrainState()):
 
-    start = time.time()
     total_loss = 0
     n_accum = 0
 
@@ -49,7 +48,7 @@ def run_epoch(data_iter, iter_size, model, criterion, optimizer, scheduler,
         if mode == "train":
             loss.backward()
             train_state.step += 1
-            train_state.samples += batch.src.shape[0]
+            train_state.samples += batch.tokens.shape[0]
             if i % accum_iter == 0:
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
