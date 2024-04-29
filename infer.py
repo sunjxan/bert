@@ -26,21 +26,22 @@ def test():
         print('Is Next:', bool(testcase.is_next[0]))
         tokens = testcase.tokens[0]
         labels = testcase.labels[0]
-        texts = []
+        masked = ''
         pos = 0
         for j, label in enumerate(labels):
             if label:
                 if j > pos:
-                    texts.append(tokens[pos:j])
+                    masked += tokenizer.DecodeIds(tokens[pos:j].tolist())
+                else:
+                    masked += '<mask>'
                 pos = j + 1
         if tokens.size(0) > pos:
-            texts.append(tokens[pos:])
-        masked = ''
-        for j, text in enumerate(texts):
-            if j:
-                masked += '<mask>'
-            masked += tokenizer.DecodeIds(text.tolist())
+            masked += tokenizer.DecodeIds(tokens[pos:].tolist())
+        else:
+            masked += '<mask>'
         print('Masked:', masked)
+        mask_lm_out, next_sent_out = model.forward(testcase.tokens, testcase.segments, testcase.mask)
+        print(mask_lm_out.shape, next_sent_out.shape)
         # print('Output:', tokenizer.DecodeIds(tokens.tolist()))
 
 if __name__ == '__main__':
