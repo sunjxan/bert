@@ -46,7 +46,7 @@ def test():
                 tokens[j] = prediction[j]
         print('Output:', tokenizer.DecodeIds(tokens.tolist()))
         _, prediction_is_next = torch.max(next_sent_out[0], dim=0)
-        print('Is Next:', prediction_is_next)
+        print('Is Next:', bool(prediction_is_next))
 
 if __name__ == '__main__':
     test()
