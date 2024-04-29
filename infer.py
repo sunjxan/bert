@@ -3,7 +3,7 @@ import torch
 
 import config
 
-from data import load_tokenizers, create_dataloader, subsequent_mask
+from data import load_tokenizer, create_dataloader
 from model import build_model
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol=None):
@@ -24,16 +24,16 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol=None):
     return ys
 
 def test():
-    tokenizer_src, tokenizer_tgt = load_tokenizers()
-    model = build_model(config.src_vocab_size, config.tgt_vocab_size, \
-        config.d_model, config.n_heads, config.n_layers, config.d_ff, config.dropout)
+    tokenizer = load_tokenizer()
+    model = build_model(config.vocab_size, config.d_model, \
+        config.n_heads, config.n_layers, config.d_ff, config.dropout)
     
     file_path = "%sfinal.pt" % config.file_prefix
     if os.path.exists(file_path):
         model.load_state_dict(torch.load(file_path))
     model.eval()
 
-    test_dataloader, test_size = create_dataloader(config.src_test_file, config.tgt_test_file, \
+    test_dataloader, test_size = create_dataloader(config.test_file, \
         1, config.max_padding, shuffle=False, drop_last=False)
 
     print("Testing ====")

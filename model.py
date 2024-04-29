@@ -177,13 +177,13 @@ class BERT(nn.Module):
         self.next_sent = next_sent
         self._reset_parameters()
 
-    def encode(self, tokens, segment, mask):
-        tokens = self.embed(tokens, segment)
+    def encode(self, tokens, segments, mask):
+        tokens = self.embed(tokens, segments)
         tokens = self.position(tokens)
         return self.encoder(tokens, mask)
     
-    def forward(self, tokens, segment, mask):
-        memory = self.encode(tokens, segment, mask)
+    def forward(self, tokens, segments, mask):
+        memory = self.encode(tokens, segments, mask)
         return self.mask_lm(memory), self.next_sent(memory)
 
     def _reset_parameters(self):

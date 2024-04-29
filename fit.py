@@ -1,11 +1,13 @@
 import time
 import torch
+import torch.nn as nn
 
 import config
 
-from data import load_tokenizers, create_dataloader
+from data import load_tokenizer, create_dataloader
 from model import build_model
-from loss import LabelSmoothing, SimpleLossCompute
+
+DEVICE = config.device
 
 class TrainState:
     step = 0
@@ -32,7 +34,7 @@ def rate(step, model_size, factor, warmup):
         step = 1
     return factor * model_size ** (-.5) * min(step ** (-.5), step * warmup ** (-1.5))
 
-def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
+def run_epoch(data_iter, iter_size, model, criterion, optimizer, scheduler,
     mode="train", accum_iter=1, print_iter=40, train_state=TrainState()):
 
     start = time.time()
@@ -42,11 +44,13 @@ def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
     n_accum = 0
 
     for i, batch in enumerate(data_iter):
-        out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
-        loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
+        mask_lm_out, next_sent_out = model.forward(batch.tokens, batch.segments, batch.mask)
+        mask_lm_loss = criterion(mask_lm_out, batch.labels)
+        next_sent_loss = criterion(next_sent_out, batch.is_next)
+        loss = mask_lm_loss + next_sent_loss
 
         if mode == "train":
-            loss_node.backward()
+            loss.backward()
             train_state.step += 1
             train_state.samples += batch.src.shape[0]
             train_state.tokens += batch.ntokens
@@ -72,17 +76,15 @@ def run_epoch(data_iter, iter_size, model, loss_compute, optimizer, scheduler,
 
 def train():
 
-    tokenizer_src, tokenizer_tgt = load_tokenizers()
-    model = build_model(config.src_vocab_size, config.tgt_vocab_size, \
-        config.d_model, config.n_heads, config.n_layers, config.d_ff, config.dropout)
+    tokenizer = load_tokenizer()
+    model = build_model(config.vocab_size, config.d_model, \
+        config.n_heads, config.n_layers, config.d_ff, config.dropout).to(DEVICE)
 
-    criterion = LabelSmoothing(size=config.tgt_vocab_size, \
-        padding_idx=tokenizer_tgt.pad_id(), smoothing=.1)
-    loss_compute = SimpleLossCompute(criterion)
+    criterion = nn.NLLLoss(ignore_index=0)
 
-    train_dataloader, train_size = create_dataloader(config.src_train_file, config.tgt_train_file, \
+    train_dataloader, train_size = create_dataloader(config.train_file, \
         config.batch_size, config.max_padding, shuffle=True, drop_last=True)
-    val_dataloader, val_size = create_dataloader(config.src_val_file, config.tgt_val_file, \
+    val_dataloader, val_size = create_dataloader(config.val_file, \
         config.batch_size, config.max_padding, shuffle=False, drop_last=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.base_lr, betas=(.9, .98), eps=1e-9)
@@ -95,7 +97,7 @@ def train():
     for epoch in range(config.num_epochs):
         model.train()
         print(f"Epoch {epoch+1} Training ====", flush=True)
-        _, train_state = run_epoch(train_dataloader, train_size, model, loss_compute, optimizer, \
+        _, train_state = run_epoch(train_dataloader, train_size, model, criterion, optimizer, \
             lr_scheduler, mode="train", accum_iter=config.accum_iter, train_state=train_state)
 
         file_path = "%s%.2d.pt" % (config.file_prefix, epoch)
@@ -103,7 +105,7 @@ def train():
 
         print(f"Epoch {epoch+1} Validation ====", flush=True)
         model.eval()
-        sloss, _ = run_epoch(val_dataloader, val_size, model, loss_compute, \
+        sloss, _ = run_epoch(val_dataloader, val_size, model, criterion, \
             DummyOptimizer(), DummyScheduler(), mode="eval")
         print('Loss: %6.2f' % sloss)
 
