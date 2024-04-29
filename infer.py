@@ -41,8 +41,13 @@ def test():
             masked += '<mask>'
         print('Masked:', masked)
         mask_lm_out, next_sent_out = model.forward(testcase.tokens, testcase.segments, testcase.mask)
-        print(mask_lm_out.shape, next_sent_out.shape)
-        # print('Output:', tokenizer.DecodeIds(tokens.tolist()))
+        _, prediction = torch.max(mask_lm_out[0], dim=1)
+        for j, label in enumerate(labels):
+            if label:
+                tokens[j] = prediction[j]
+        print('Output:', tokenizer.DecodeIds(tokens.tolist()))
+        _, prediction_is_next = torch.max(next_sent_out[0], dim=0)
+        print('Is Next:', prediction_is_next)
 
 if __name__ == '__main__':
     test()
